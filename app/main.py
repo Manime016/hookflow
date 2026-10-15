@@ -48,3 +48,8 @@ def create_endpoint(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to create endpoint",
         )
+
+@app.get("/endpoints")
+def get_endpoints(db: Session = Depends(get_db)):
+    endpoints = db.query(WebhookEndpoint).all()
+    return endpoints
