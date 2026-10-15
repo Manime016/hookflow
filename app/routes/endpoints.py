@@ -6,8 +6,11 @@ from sqlalchemy.orm import Session
 from app.database import SessionLocal
 from app.models.endpoint import WebhookEndpoint
 from app.schemas.endpoint import EndpointCreate, EndpointRead, EndpointUpdate
+from app.security import verify_management_key
 
-router = APIRouter(prefix="/endpoints", tags=["endpoints"])
+router = APIRouter(
+    prefix="/endpoints", tags=["endpoints"], dependencies=[Depends(verify_management_key)]
+)
 
 
 def get_db():
@@ -30,7 +33,12 @@ def get_endpoint_or_404(endpoint_id: int, db: Session) -> WebhookEndpoint:
 
 @router.post("", response_model=EndpointRead, status_code=status.HTTP_201_CREATED)
 def create_endpoint(endpoint: EndpointCreate, db: Session = Depends(get_db)):
-    db_endpoint = WebhookEndpoint(url=str(endpoint.url), secret=endpoint.secret)
+    db_endpoint = WebhookEndpoint(
+        url=str(endpoint.url),
+        secret=endpoint.secret.get_secret_value(),
+        vendor_id=endpoint.vendor_id,
+        event_types=endpoint.event_types,
+    )
     try:
         db.add(db_endpoint)
         db.commit()
@@ -67,6 +75,8 @@ def update_endpoint(
     values = {field: value for field, value in values.items() if value is not None}
     if "url" in values and values["url"] is not None:
         values["url"] = str(values["url"])
+    if "secret" in values and values["secret"] is not None:
+        values["secret"] = values["secret"].get_secret_value()
     for field, value in values.items():
         setattr(endpoint, field, value)
 

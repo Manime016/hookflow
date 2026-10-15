@@ -1,7 +1,7 @@
 
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, Integer, String, func
+from sqlalchemy import Boolean, DateTime, Integer, JSON, String, func, Index
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
@@ -9,6 +9,7 @@ from app.database import Base
 
 class WebhookEndpoint(Base):
     __tablename__ = "webhook_endpoints"
+    __table_args__ = (Index("ix_endpoint_vendor_active", "vendor_id", "is_active"),)
 
     id: Mapped[int] = mapped_column(
         Integer, primary_key=True, index=True
@@ -16,6 +17,8 @@ class WebhookEndpoint(Base):
     url: Mapped[str] = mapped_column(
         String(2048), nullable=False
     )
+    vendor_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    event_types: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
     secret: Mapped[str] = mapped_column(
         String(255), nullable=False
     )
